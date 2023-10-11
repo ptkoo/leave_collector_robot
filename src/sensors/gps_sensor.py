@@ -47,7 +47,7 @@ class data:
 
 if __name__ == "__main__":
 
-    sensor = GPSSensor("/dev/ttyUSB0", 9600)
+    sensor = GPSSensor("/dev/ttyAMAO", 9600)
     while True:
         data = sensor.read()
         print(data)
