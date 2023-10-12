@@ -3,50 +3,25 @@ import pynmea2
 import time
 import io
 
-# from gyroscope_sensor import GyroscopeSensor
-class GPSSensor:
-    def __init__(self, port, baudrate):
-        self.port = port
-        self.baudrate = baudrate
-        self.ser = serial.Serial(port, baudrate, timeout=5.0)
-        self.sio = io.TextIOWrapper(io.BufferedRWPair(self.ser, self.ser))
-
-    def read(self):
-        try:
-            line = self.sio.readline()
-            msg = pynmea2.parse(line)
-            return self.parse(msg)
-        except serial.SerialException as e:
-            print('Device error: {}'.format(e))
-            return None
-        except pynmea2.ParseError as e:
-            print('Parse error: {}'.format(e))
-            return None
-
-    def parse(self, msg):
-        lat = msg.latitude
-        lon = msg.longitude
-        alt = msg.altitude
-        speed = msg.spd_over_grnd
-        num_sats = msg.num_sats
-        hdop = msg.horizontal_dil
-        return (lat, lon, alt, speed, num_sats, hdop)
-
-    def close(self):
-        self.ser.close()
+ser = serial.Serial('/dev/ttyAMA0', 9600, timeout=0.5)
+sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser))
 
 
-if __name__ == '__main__':
-    gps = GPSSensor('/dev/ttyS0', 9600)
+while 1:
     try:
-        while True:
-            data = gps.read()
-            if data is not None:
-                lat, lon, alt, speed, num_sats, hdop = data
-                print('Latitude: {}, Longitude: {}, Altitude: {}, Speed: {}, Num Sats: {}, HDOP: {}'.format(lat, lon, alt, speed, num_sats, hdop))
-            time.sleep(1)
-    
+        line = sio.readline()
+        if line:
+            msg = pynmea2.parse(line)
+            print(repr(msg))
+            print (msg.latitude)
+            print (msg.longitude)
     except KeyboardInterrupt:
-        gps.close()
         print('Bye.')
-        
+        break
+    except pynmea2.ParseError as e:
+        print('Parse error: {}'.format(e))
+        continue
+    except ValueError:
+        print('Invalid checksum in the sentence.')
+        continue
+    time.sleep(0.1)
