@@ -1,7 +1,3 @@
-'''
-    Find Heading by using HMC5883L interface with Raspberry Pi using Python
-	http://www.electronicwings.com
-'''
 import smbus		#import SMBus module of I2C
 from time import sleep  #import sleep
 import math
@@ -92,8 +88,7 @@ def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
     
     transf = transforms.Affine2D() \
        .rotate_deg(0) \
-       .scale(scale_x, scale_y) \
-       .translate(mean_x, mean_y)
+       .scale(scale_x, scale_y)
 
     ellipse.set_transform(transf + ax.transData)
    
@@ -114,12 +109,12 @@ def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
     #print("Translation Matrix\n", translationMatrix)
     
     # Calculate the major and minor axes endpoints in data coordinates
-    major_axis_endpoints_data = np.array([[ell_radius_x / 2, 0], [-ell_radius_x / 2, 0]])
-    minor_axis_endpoints_data = np.array([[0, ell_radius_y / 2], [0, -ell_radius_y / 2]])
+    major_axis_endpoints_data = np.array([[ell_radius_x , 0], [-ell_radius_x, 0]])
+    minor_axis_endpoints_data = np.array([[0, ell_radius_y], [0, -ell_radius_y]])
 
     
     # Apply the transformation matrix to the endpoints
-    major_axis_endpoints_transformed = np.dot(major_axis_endpoints_data, transformationMatrix) + translationMatrix.T
+    major_axis_endpoints_transformed = np.dot(major_axis_endpoints_data, transformationMatrix)  + translationMatrix.T
     minor_axis_endpoints_transformed = np.dot(minor_axis_endpoints_data, transformationMatrix) + translationMatrix.T
         
     
@@ -158,9 +153,19 @@ def calibrate():
             y_calibrated_samples.append(y_raw - y_raw_bias )
             z_calibrated_samples.append(z_raw - z_raw_bias )
             
+            
             sleep(0.1)
             
         print("Calibrated")   
+        
+        # X sensitivity scale factor
+        
+        x_sen_fact = max(1, abs((max(x_calibrated_samples)- 0 ) / (min(x_calibrated_samples) - 0)))
+        y_sen_fact = max(1, abs((max(y_calibrated_samples)- 0 ) / (min(y_calibrated_samples) - 0)))
+     
+
+        
+        sens_vec = np.array([[x_sen_fact, 0], [0, y_sen_fact]])
         
         # Plot the confidence ellipse with 3 standard deviations
         ax = plt.gca()
@@ -191,12 +196,27 @@ def calibrate():
        
         # Scale factor
         #scale_factor = width / height
+        major_axis_length = major_axis_endpoint1[0] - major_axis_endpoint2[0]
+        minor_axis_length = minor_axis_endpoint1[1] - minor_axis_endpoint2[1]
+        scale_factor = abs(major_axis_length / minor_axis_length)
+        if (major_axis_length > minor_axis_length):
+                
+                scaleMatrix = np.array([[1/scale_factor, 0], [0, 1]])
+        else: 
+                
+                scaleMatrix = np.array([[1, 0], [0, scale_factor]])
+                
+                
+       # print(major_axis_length)
+        #print(minor_axis_length)
+        #print(scaleMatrix)
+        #print(major_axis_endpoint1)
+        #print(major_axis_endpoint2)
+       # print(minor_axis_endpoint1)
+        #print(minor_axis_endpoint2)
         
-        scale_factor = math.sqrt((( major_axis_endpoint1[1]- major_axis_endpoint1[0])**2) +  ((major_axis_endpoint2[1] - major_axis_endpoint2[0]) ** 2)) \
-        / math.sqrt (((minor_axis_endpoint1[1]- minor_axis_endpoint1[0]) ** 2 ) +  (( minor_axis_endpoint2[1]- minor_axis_endpoint2[0]) ** 2 ))
         
         
-        scaleMatrix = np.array([[1/scale_factor, 0], [0, 1]])
        
        # for x in x_calibrated_samples:
                 #x_calibrated_samples1.append(x / scale_factor)
@@ -210,7 +230,7 @@ def calibrate():
         # Create Reverse Rotational Matrix
         inverse_rotation_matrix = rotationalMatrix.T
         
-        soft_factor = rotationalMatrix @ scaleMatrix @ inverse_rotation_matrix
+        soft_factor = rotationalMatrix @ scaleMatrix @ inverse_rotation_matrix  @ sens_vec
         
         for x_calibrated, y_calibrated in zip(x_calibrated_samples, y_calibrated_samples):
                 
@@ -227,6 +247,9 @@ def calibrate():
                 
         
         ellipse1 = confidence_ellipse(x_calibrated_samples1, y_calibrated_samples1, ax, n_std=2.5, edgecolor='green', linewidth=2)
+        ellipse_center1 = ellipse.center
+        # Plot the center point
+        plt.plot(ellipse_center1[0], ellipse_center[1], marker='o', markersize=8, color='yellow', label='Ellipse Center')
         ax.scatter(x_calibrated_samples1, y_calibrated_samples1 , c='c', marker='o', label='Calibrated Data')
         plt.xlim(-1000, 1000)  
         plt.ylim(-1000, 1000)  
@@ -250,12 +273,19 @@ Magnetometer_Init()     # initialize HMC5883L magnetometer
 
 # Assigning to global variables 
 
-x_raw_bias, y_raw_bias, soft_factor = calibrate()
+#x_raw_bias, y_raw_bias, soft_factor = calibrate()
 
 
+soft_factor = np.array([[1, 0], [0, 0.84465789]])
+x_raw_bias = 53.148
+y_raw_bias = -48.19
 
-while True:
-    
+#print(soft_factor)
+#print(x_raw_bias, y_raw_bias)
+
+#while True:
+
+def runMag():
 	
         #Read magnetometer raw value
         
@@ -273,11 +303,13 @@ while True:
        
         # Create a 2 x 1 matrix with x and y as elements
         vectorMatrix = np.array([[x_calibrated,0], [0,y_calibrated]])
-
+        
        
 
         # Perform matrix multiplication: Reverse Rotation Matrix * Scale Matrix * Rotation Matrix * Vector Matrix
         resultMatrix = vectorMatrix @ soft_factor
+        
+      
 
         # Extract individual elements from the result matrix
         x = resultMatrix[0, 0]  # First element (x value)
@@ -285,7 +317,7 @@ while True:
 
         
 
-        heading = - math.atan2(x,y) 
+        heading =  math.atan2(x,y) 
         
         #Due to declination check for >360 degree
         if(heading > 2*pi):
@@ -298,6 +330,12 @@ while True:
         #convert into angle
         heading_angle = int(heading * 180/pi) 
         
-        print ("Heading Angle = %d°" %heading_angle)
-        sleep(0.2)
-   
+        #print ("Heading Angle = %d°" %heading_angle)
+        return heading_angle
+        
+ #       sleep(0.5)
+ 
+if __name__ == "__main__":
+         while True:
+                runMag()
+                sleep(0.5)
