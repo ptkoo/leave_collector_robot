@@ -20,7 +20,7 @@ def angleDifference(kalmanMeasurement, kalmanState):
 		elif ( diff < 0 ) :
 			return 360 + diff
 	else: 
-		return diff = abs(diff) 
+		return abs(diff) 
 
 # kalman Input is gyroscope yaw angle, kalmanMeasurement is magnetometer yaw angle. 
 # kalman Input is the predicted state based on previous state and and physical model in our case, we alrdy did that with gyro.
