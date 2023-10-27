@@ -31,11 +31,34 @@ def read_raw_data(addr):
         value = value - 65536
     return value
 
-gyro_cali_x = 0.0
-gyro_cali_y = 0.0
-gyro_cali_z = 0.0
+def get_cali():
+    
+    gyro_cali_x = 0.0
+    gyro_cali_y = 0.0
+    gyro_cali_z = 0.0
+    
+    MPU_Init()
+    gyro_scale = 65.5  # Sensitivity scale factor for ±500 dps range
+
+    print("Reading MPU6050...")
+
+    for _ in range(2000):
+        gyro_cali_x += read_raw_data(GYRO_XOUT_H) / gyro_scale
+        gyro_cali_y += read_raw_data(GYRO_YOUT_H) / gyro_scale
+        gyro_cali_z += read_raw_data(GYRO_ZOUT_H) / gyro_scale
+
+        sleep(0.01)  # Sampling rate of 1 Hz
+
+    gyro_cali_x /= 2000
+    gyro_cali_y /= 2000
+    gyro_cali_z /= 2000
+    
+    print("Finished Calibration")
+    
+    return gyro_cali_x, gyro_cali_y, gyro_cali_z
 
 
+'''
 if __name__ == "__main__":
     MPU_Init()
     gyro_scale = 65.5  # Sensitivity scale factor for ±500 dps range
@@ -56,3 +79,4 @@ if __name__ == "__main__":
     print("x calibrated values:", gyro_cali_x)
     print("y calibrated values:", gyro_cali_y)
     print("z calibrated values:", gyro_cali_z)
+'''

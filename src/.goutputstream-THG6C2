@@ -71,9 +71,9 @@ while True:
     
     if action[0]:
 		# Move down from the footpath
-		try:
-			leaf_collector.set_speeds(75, 75)
-			leaf_collector.forward(360-yaw.get_yaw(), 0, const)
+        try:
+            leaf_collector.set_speeds(75,75)
+            leaf_collector.forward(360-yaw.get_yaw(), 0, const)
         except:
             print("Kalman error")
             pass
@@ -85,8 +85,6 @@ while True:
     elif action[1]:
 		# Move to the middle of the grass plane
         try:
-			leaf_collector.set_speeds(150,150)
-			time(0.2)
             leaf_collector.set_speeds(200, 200)
             leaf_collector.forward(360-yaw.get_yaw(), 0, const)
         except:
@@ -122,8 +120,6 @@ while True:
     elif action[3]:
         # LONG striaght to the gournd (dirt)
         try:
-			leaf_collector.set_speeds(150,150)
-			time(0.2)
             leaf_collector.set_speeds(200, 200)
             leaf_collector.forward(360-yaw.get_yaw(), 0, const)
         except:

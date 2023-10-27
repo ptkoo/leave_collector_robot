@@ -5,7 +5,7 @@ import RPi.GPIO as GPIO
 import sys
 
 class GyroscopeSensor:
-    def __init__(self):
+    def __init__(self, x, y, z):
         self.PWR_MGMT_1 = 0x6B
         self.SMPLRT_DIV = 0x19
         self.CONFIG = 0x1A
@@ -23,9 +23,9 @@ class GyroscopeSensor:
 
         self.gyro_scale = 65.5  # Sensitivity scale factor for ±500 dps (deg/s) range
         self.dt = 0.3  # Time interval in seconds (sampling rate of 2 Hz)
-        self.x_calibrated_value = -3.9352595419847227
-        self.y_calibrated_value = -1.2961908396946593
-        self.z_calibrated_value = -1.6157633587786213
+        self.x_calibrated_value = x #-3.425305343511458
+        self.y_calibrated_value = y #-1.4493587786259525
+        self.z_calibrated_value = z #-1.6307786259541983
 
         self.x_angular = 0.0
         self.y_angular = 0.0
@@ -65,19 +65,19 @@ class GyroscopeSensor:
         y_angle1 = (self.y_angular *  self.dt) % 360
         z_angle1 = (self.z_angular *  self.dt) % 360
 
-        print("X Angle: {:.2f} degrees from gyro".format(x_angle1))
+        #print("X Angle: {:.2f} degrees from gyro".format(x_angle1))
         #print("Y Angle: {:.2f} degrees".format(gyro_x_scaled))
         #print("Z Angle: {:.2f} degrees".format(z_angle1))
         #print("\n")
 
-        return self.x_angular, x_angle1, z_angle1, 
+        return self.x_angular, x_angle1, z_angle1
 
-
+'''
 if __name__ == "__main__":
     gyro_sensor = GyroscopeSensor()
     print("Reading MPU6050...")
     while True:
         gyro_sensor.runGyro()
         sleep(gyro_sensor.dt)
-        
+'''        
 
